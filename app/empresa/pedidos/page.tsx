@@ -213,20 +213,20 @@ export default function EmpresaPedidosPage() {
                   >
                     Preparando
                   </button>
-                  <button 
+                  {order.deliveryMethod === "DELIVERY" && <button
                     onClick={() => updateStatus(order.id, "SHIPPED")}
                     disabled={updatingId === order.id || order.status === "SHIPPED"}
                     className="px-4 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-30"
                   >
                     En Camino
-                  </button>
-                  <button 
+                  </button>}
+                  {order.deliveryMethod !== "DELIVERY" && <button
                     onClick={() => updateStatus(order.id, "READY_FOR_PICKUP")}
                     disabled={updatingId === order.id || order.status === "READY_FOR_PICKUP"}
                     className="px-4 py-2 rounded-xl bg-purple-50 text-purple-700 text-xs font-bold hover:bg-purple-600 hover:text-white transition-all disabled:opacity-30"
                   >
                     Listo para Recojo
-                  </button>
+                  </button>}
                   <button 
                     onClick={() => updateStatus(order.id, "DELIVERED")}
                     disabled={updatingId === order.id || order.status === "DELIVERED"}

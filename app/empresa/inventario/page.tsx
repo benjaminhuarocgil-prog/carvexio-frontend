@@ -19,6 +19,7 @@ export default function EmpresaInventarioPage() {
   const [formStock, setFormStock] = useState("");
   const [formLocalId, setFormLocalId] = useState<number | null>(null);
   const [formIgv, setFormIgv] = useState(false);
+  const [formDeliveryAvailable, setFormDeliveryAvailable] = useState(false);
   const [adding, setAdding] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -82,6 +83,7 @@ export default function EmpresaInventarioPage() {
     setFormPrice("");
     setFormStock("");
     setFormIgv(false);
+    setFormDeliveryAvailable(false);
     setFormLocalId(selectedBranch?.id ?? (branches[0]?.id ?? null));
     setPhoto(null);
     setPhotoPreview(null);
@@ -92,7 +94,7 @@ export default function EmpresaInventarioPage() {
   };
 
   const downloadProductTemplate = () => {
-    const csvContent = "Nombre;Descripcion;Precio;Stock;Categoria;Marca;Proveedor;IGV\nFiltro de Aceite;Filtro para motor Hyundai/Kia;35.50;20;Filtros;Hyundai;Autopartes SAC;si\nPastillas de freno;Pastillas delanteras ceramicas;120.00;10;Frenos;Brembo;Importadora Alfa;no\nBateria 11 placas;Bateria libre mantenimiento 12V;380.00;5;Baterias;Bosch;Bosch Peru;si";
+    const csvContent = "Nombre;Descripcion;Precio;Stock;Categoria;Marca;Proveedor;IGV;Delivery\nFiltro de Aceite;Filtro para motor Hyundai/Kia;35.50;20;Filtros;Hyundai;Autopartes SAC;si;si\nPastillas de freno;Pastillas delanteras ceramicas;120.00;10;Frenos;Brembo;Importadora Alfa;no;no\nBateria 11 placas;Bateria libre mantenimiento 12V;380.00;5;Baterias;Bosch;Bosch Peru;si;si";
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -150,9 +152,11 @@ export default function EmpresaInventarioPage() {
         const supplier = rowObj.proveedor || rowObj.supplier || "";
         const igvStr = (rowObj.igv || "").toLowerCase();
         const igv = igvStr === "si" || igvStr === "sí" || igvStr === "true" || igvStr === "1";
+        const deliveryStr = (rowObj.delivery || "").toLowerCase();
+        const deliveryAvailable = deliveryStr === "si" || deliveryStr === "sí" || deliveryStr === "true" || deliveryStr === "1";
 
         if (name) {
-          items.push({ name, description, price, stock, category, brand, supplier, igv, localId: targetLocalId });
+          items.push({ name, description, price, stock, category, brand, supplier, igv, deliveryAvailable, localId: targetLocalId });
         }
       }
       setParsedItems(items);
@@ -192,6 +196,7 @@ export default function EmpresaInventarioPage() {
     setFormPrice(p.price?.toString() || "");
     setFormStock(p.stock?.toString() || "");
     setFormIgv(p.igv || false);
+    setFormDeliveryAvailable(p.deliveryAvailable || false);
     setFormLocalId(selectedBranch ? selectedBranch.id : (p.localId ?? (branches[0]?.id ?? null)));
     setPhotoPreview(p.photoUrl || null);
     setPhoto(null);
@@ -219,6 +224,7 @@ export default function EmpresaInventarioPage() {
         price: parseFloat(formPrice),
         stock: parseInt(formStock, 10),
         igv: formIgv,
+        deliveryAvailable: formDeliveryAvailable,
         localId: targetLocalId,
       };
 
@@ -500,6 +506,22 @@ export default function EmpresaInventarioPage() {
                       <input type="checkbox" checked={formIgv} onChange={e => setFormIgv(e.target.checked)} className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500/20 border-slate-300" />
                       <span className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Aplica IGV (18%)</span>
                     </label>
+                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-base" aria-hidden="true">🚚</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">¿Disponible para delivery?</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => setFormDeliveryAvailable(true)}
+                          className={`rounded-xl px-3 py-2 text-xs font-black transition ${formDeliveryAvailable ? "bg-emerald-600 text-white shadow-sm" : "bg-white text-slate-500 border border-slate-200 hover:border-emerald-300"}`}>
+                          Sí, delivery
+                        </button>
+                        <button type="button" onClick={() => setFormDeliveryAvailable(false)}
+                          className={`rounded-xl px-3 py-2 text-xs font-black transition ${!formDeliveryAvailable ? "bg-slate-700 text-white shadow-sm" : "bg-white text-slate-500 border border-slate-200 hover:border-slate-300"}`}>
+                          No, solo recojo
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="pt-2">

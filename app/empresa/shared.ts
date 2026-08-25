@@ -97,6 +97,7 @@ export type Product = {
   supplier?: string | null;
   photoUrl?: string | null;
   igv?: boolean | null;
+  deliveryAvailable?: boolean | null;
   localId?: number | null;
 };
 
@@ -156,6 +157,7 @@ export type Order = {
   businessName: string;
   totalAmount: number;
   status: string;
+  deliveryMethod?: "DELIVERY" | "PICKUP";
   address: string;
   phone: string;
   notes: string;

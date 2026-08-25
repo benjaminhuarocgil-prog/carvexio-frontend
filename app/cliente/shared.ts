@@ -30,6 +30,7 @@ export type CartItem = {
   price?: number | null;
   quantity?: number | null;
   subtotal?: number | null;
+  deliveryAvailable?: boolean | null;
 };
 
 export type Cart = {
@@ -49,6 +50,7 @@ export type Order = {
   businessName: string;
   totalAmount: number;
   status: string;
+  deliveryMethod?: "DELIVERY" | "PICKUP";
   address: string;
   phone: string;
   notes: string;

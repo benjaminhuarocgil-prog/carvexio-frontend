@@ -47,6 +47,7 @@ type Product = {
   category?: string;
   brand?: string;
   igv?: boolean;
+  deliveryAvailable?: boolean;
   localId?: number | null;
 };
 
@@ -769,11 +770,19 @@ export default function BusinessDetailPage({ params }: PageProps) {
                             Quedan {prod.stock}
                           </span>
                         )}
+                        {prod.deliveryAvailable && (
+                          <span className="absolute top-2 right-2 bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+                            🚚 Delivery
+                          </span>
+                        )}
                       </div>
                       <div className="p-4 md:p-5 flex-1 flex flex-col">
                         <h3 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 text-sm md:text-base leading-snug mb-2">
                           {prod.name}
                         </h3>
+                        <p className={`text-[10px] font-bold mb-2 ${prod.deliveryAvailable ? "text-emerald-600" : "text-slate-400"}`}>
+                          {prod.deliveryAvailable ? "Envío a domicilio disponible" : "Solo recojo en tienda"}
+                        </p>
                         <div className="mt-auto pt-4 flex items-center justify-between gap-2">
                           <div className="font-black text-slate-900 md:text-lg">S/ {prod.price.toFixed(2)}</div>
                           <button

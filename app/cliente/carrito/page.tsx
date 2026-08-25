@@ -72,10 +72,21 @@ export default function ClienteCarritoPage() {
 
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutModal, setCheckoutModal] = useState(false);
-  const [deliveryType, setDeliveryType] = useState<"DELIVERY" | "PICKUP">("DELIVERY");
+  const [deliveryType, setDeliveryType] = useState<"DELIVERY" | "PICKUP">("PICKUP");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
+
+  const deliveryAvailableForSelection = useMemo(() => {
+    const selectedItems = cart?.items.filter(item => selectedIds.includes(item.id)) ?? [];
+    return selectedItems.length > 0 && selectedItems.every(item => item.deliveryAvailable === true);
+  }, [cart, selectedIds]);
+
+  useEffect(() => {
+    if (!deliveryAvailableForSelection && deliveryType === "DELIVERY") {
+      setDeliveryType("PICKUP");
+    }
+  }, [deliveryAvailableForSelection, deliveryType]);
 
   // Estado para el modal de Google Maps
   const [mapModalOpen, setMapModalOpen] = useState(false);
@@ -96,6 +107,7 @@ export default function ClienteCarritoPage() {
           address: finalAddress,
           phone,
           notes,
+          deliveryMethod: deliveryType,
           itemIds: selectedIds // Enviamos solo los seleccionados
         })
       });
@@ -287,8 +299,8 @@ export default function ClienteCarritoPage() {
                 {/* Selector de Método de Entrega */}
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-2">Método de Entrega</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
+                  <div className={`grid gap-3 ${deliveryAvailableForSelection ? "grid-cols-2" : "grid-cols-1"}`}>
+                    {deliveryAvailableForSelection && <button
                       type="button"
                       onClick={() => {
                         setDeliveryType("DELIVERY");
@@ -298,7 +310,7 @@ export default function ClienteCarritoPage() {
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect width="16" height="13" x="1" y="6" rx="2" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>
                       <span className="text-xs">Envío a Domicilio</span>
-                    </button>
+                    </button>}
 
                     <button
                       type="button"
@@ -312,6 +324,11 @@ export default function ClienteCarritoPage() {
                       <span className="text-xs">Recojo en Tienda</span>
                     </button>
                   </div>
+                  {!deliveryAvailableForSelection && (
+                    <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 border border-amber-100">
+                      Algunos productos seleccionados no tienen delivery. Este pedido será para recojo en tienda.
+                    </p>
+                  )}
                 </div>
 
                 {deliveryType === "DELIVERY" ? (

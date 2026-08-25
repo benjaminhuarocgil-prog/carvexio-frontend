@@ -31,6 +31,18 @@ const getStatusLabel = (status: string) => {
   }
 };
 
+const getTrackingSteps = (deliveryMethod?: string) => deliveryMethod === "DELIVERY"
+  ? [
+      { status: "PREPARING", label: "🟡 Preparando" },
+      { status: "SHIPPED", label: "🚗 En camino" },
+      { status: "DELIVERED", label: "🟢 Entregado" },
+    ]
+  : [
+      { status: "PREPARING", label: "🟡 Preparando" },
+      { status: "READY_FOR_PICKUP", label: "📦 Listo para recojo" },
+      { status: "DELIVERED", label: "🟢 Entregado" },
+    ];
+
 export default function ClienteComprasPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -206,7 +218,9 @@ export default function ClienteComprasPage() {
                       <div className="flex items-start gap-3">
                         <div className="mt-1 h-2 w-2 rounded-full bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.6)]" />
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Entregar en:</p>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">
+                            {order.deliveryMethod === "DELIVERY" ? "Envío a domicilio:" : "Recojo en tienda:"}
+                          </p>
                           <p className="text-sm text-slate-700 font-semibold">{order.address || "Recojo en el taller del vendedor"}</p>
                         </div>
                       </div>
@@ -231,22 +245,30 @@ export default function ClienteComprasPage() {
                 </div>
               </div>
 
-              {/* Footer / Stepper visual */}
-              <div className="px-8 pb-8 flex items-center gap-1">
-                {["PAID", "PREPARING", "SHIPPED", "DELIVERED"].map((s, idx) => {
-                  const states = ["PAID", "PREPARING", "SHIPPED", "DELIVERED"];
-                  const currentIdx = states.indexOf(order.status);
-                  const isDone = states.indexOf(s) <= currentIdx;
-                  const isLast = idx === states.length - 1;
-
-                  return (
-                    <div key={s} className="flex items-center flex-1 last:flex-none">
-                      <div className={`h-2.5 w-2.5 rounded-full ${isDone ? 'bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]' : 'bg-slate-200'}`} />
-                      {!isLast && <div className={`h-0.5 flex-1 mx-1 rounded-full ${isDone && states.indexOf(states[idx + 1]) <= currentIdx ? 'bg-blue-600' : 'bg-slate-100'}`} />}
+              {/* Seguimiento visual del pedido */}
+              {order.status !== "PENDING" && order.status !== "CANCELLED" && (() => {
+                const steps = getTrackingSteps(order.deliveryMethod);
+                const currentIndex = steps.findIndex(step => step.status === order.status);
+                return (
+                  <div className="mx-6 md:mx-8 mb-8 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 to-white px-5 py-4">
+                    <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-blue-700">Seguimiento de tu pedido</p>
+                    <div className="flex items-start">
+                      {steps.map((step, index) => {
+                        const completed = currentIndex >= index || order.status === "DELIVERED";
+                        return (
+                          <div key={step.status} className="flex flex-1 items-start last:flex-none">
+                            <div className="min-w-0 text-center">
+                              <div className={`mx-auto h-3 w-3 rounded-full ${completed ? "bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]" : "bg-slate-200"}`} />
+                              <p className={`mt-2 text-[10px] font-black leading-tight ${completed ? "text-blue-800" : "text-slate-400"}`}>{step.label}</p>
+                            </div>
+                            {index < steps.length - 1 && <div className={`mt-1.5 h-0.5 flex-1 mx-2 ${completed && currentIndex > index ? "bg-blue-500" : "bg-slate-200"}`} />}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>
