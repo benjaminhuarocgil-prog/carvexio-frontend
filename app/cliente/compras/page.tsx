@@ -33,15 +33,23 @@ const getStatusLabel = (status: string) => {
 
 const getTrackingSteps = (deliveryMethod?: string) => deliveryMethod === "DELIVERY"
   ? [
-      { status: "PREPARING", label: "🟡 Preparando" },
-      { status: "SHIPPED", label: "🚗 En camino" },
-      { status: "DELIVERED", label: "🟢 Entregado" },
+      { status: "PREPARING", label: "Preparando" },
+      { status: "SHIPPED", label: "En camino" },
+      { status: "DELIVERED", label: "Entregado" },
     ]
   : [
-      { status: "PREPARING", label: "🟡 Preparando" },
-      { status: "READY_FOR_PICKUP", label: "📦 Listo para recojo" },
-      { status: "DELIVERED", label: "🟢 Entregado" },
+      { status: "PREPARING", label: "Preparando" },
+      { status: "READY_FOR_PICKUP", label: "Listo para recojo" },
+      { status: "DELIVERED", label: "Entregado" },
     ];
+
+function TrackingIcon({ status }: { status: string }) {
+  const shared = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (status === "PREPARING") return <svg {...shared}><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>;
+  if (status === "SHIPPED") return <svg {...shared}><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>;
+  if (status === "READY_FOR_PICKUP") return <svg {...shared}><path d="M3 10h18v10H3z"/><path d="M2 10 5 4h14l3 6"/><path d="M9 14h6"/></svg>;
+  return <svg {...shared}><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg>;
+}
 
 export default function ClienteComprasPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -258,10 +266,12 @@ export default function ClienteComprasPage() {
                         return (
                           <div key={step.status} className="flex flex-1 items-start last:flex-none">
                             <div className="min-w-0 text-center">
-                              <div className={`mx-auto h-3 w-3 rounded-full ${completed ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-slate-200"}`} />
+                              <div className={`mx-auto flex h-9 w-9 items-center justify-center rounded-xl border-2 transition ${completed ? "border-emerald-500 bg-emerald-500 text-white shadow-lg shadow-emerald-200" : "border-slate-200 bg-white text-slate-300"}`}>
+                                <TrackingIcon status={step.status} />
+                              </div>
                               <p className={`mt-2 text-[10px] font-black leading-tight ${completed ? "text-emerald-700" : "text-slate-400"}`}>{step.label}</p>
                             </div>
-                            {index < steps.length - 1 && <div className={`mt-1.5 h-0.5 flex-1 mx-2 ${completed && currentIndex > index ? "bg-emerald-500" : "bg-slate-200"}`} />}
+                            {index < steps.length - 1 && <div className={`mt-[18px] h-0.5 flex-1 mx-2 ${completed && currentIndex > index ? "bg-emerald-500" : "bg-slate-200"}`} />}
                           </div>
                         );
                       })}
