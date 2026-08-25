@@ -258,10 +258,10 @@ export default function ClienteComprasPage() {
                         return (
                           <div key={step.status} className="flex flex-1 items-start last:flex-none">
                             <div className="min-w-0 text-center">
-                              <div className={`mx-auto h-3 w-3 rounded-full ${completed ? "bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]" : "bg-slate-200"}`} />
-                              <p className={`mt-2 text-[10px] font-black leading-tight ${completed ? "text-blue-800" : "text-slate-400"}`}>{step.label}</p>
+                              <div className={`mx-auto h-3 w-3 rounded-full ${completed ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-slate-200"}`} />
+                              <p className={`mt-2 text-[10px] font-black leading-tight ${completed ? "text-emerald-700" : "text-slate-400"}`}>{step.label}</p>
                             </div>
-                            {index < steps.length - 1 && <div className={`mt-1.5 h-0.5 flex-1 mx-2 ${completed && currentIndex > index ? "bg-blue-500" : "bg-slate-200"}`} />}
+                            {index < steps.length - 1 && <div className={`mt-1.5 h-0.5 flex-1 mx-2 ${completed && currentIndex > index ? "bg-emerald-500" : "bg-slate-200"}`} />}
                           </div>
                         );
                       })}
