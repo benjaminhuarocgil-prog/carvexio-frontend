@@ -1,0 +1,33 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { apiFetch } from "../../../lib/api";
+import { Vehicle } from "../shared";
+
+const blank = () => ({ vehicleType: "", plate: "", vin: "", mileage: "", yearsOfUse: "" });
+
+export default function ClienteAutosPage() {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]); const [form, setForm] = useState(blank); const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null);
+  const load = () => apiFetch<Vehicle[]>("/vehicles/my").then(d => setVehicles(Array.isArray(d) ? d : [])).catch(e => setError(e instanceof Error ? e.message : "No se pudieron cargar tus autos")).finally(() => setLoading(false));
+  useEffect(() => { void load(); }, []);
+  const submit = async (event: FormEvent) => { event.preventDefault(); setError(null); const vin = form.vin.trim().toUpperCase(); const yearsOfUse = Number(form.yearsOfUse);
+    if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) return setError("El VIN debe tener exactamente 17 caracteres válidos (sin I, O ni Q).");
+    if (!/^\d{1,7}$/.test(form.mileage)) return setError("El kilometraje debe ser un número entero de hasta 7 dígitos.");
+    if (!Number.isInteger(yearsOfUse) || yearsOfUse < 0 || yearsOfUse > 40) return setError("Los años de uso deben ser un número entero entre 0 y 40.");
+    try { setSaving(true); await apiFetch(editingId ? `/vehicles/${editingId}` : "/vehicles", { method: editingId ? "PUT" : "POST", body: JSON.stringify({ ...form, plate: form.plate.trim().toUpperCase(), vin, mileage: Number(form.mileage), yearsOfUse }) }); setForm(blank()); setEditingId(null); setLoading(true); await load(); }
+    catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar el auto"); } finally { setSaving(false); } };
+  const edit = (v: Vehicle) => { setEditingId(v.id); setForm({ vehicleType: v.vehicleType, plate: v.plate, vin: v.vin, mileage: String(v.mileage), yearsOfUse: String(v.yearsOfUse) }); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const remove = async (id: number) => { if (!confirm("¿Eliminar este auto?")) return; try { await apiFetch(`/vehicles/${id}`, { method: "DELETE" }); setVehicles(p => p.filter(v => v.id !== id)); } catch { setError("No se pudo eliminar el auto. Puede estar asociado a una reserva."); } };
+  return <><header className="mb-6"><h1 className="text-2xl font-bold tracking-tight text-slate-900">Mis Autos</h1><p className="mt-0.5 text-sm text-slate-500">Registra los vehículos que llevarás al taller.</p></header>
+    {error && <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+    <form onSubmit={submit} className="mb-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"><h2 className="mb-4 font-bold text-slate-900">{editingId ? "Editar auto" : "Registrar auto"}</h2><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <label className="text-sm font-medium text-slate-700">Tipo de auto<input required value={form.vehicleType} maxLength={100} onChange={e => setForm({ ...form, vehicleType: e.target.value })} placeholder="Ej. SUV, sedán, camioneta" className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5" /></label>
+      <label className="text-sm font-medium text-slate-700">Placa<input required value={form.plate} maxLength={16} onChange={e => setForm({ ...form, plate: e.target.value.toUpperCase() })} placeholder="ABC-123" className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5" /></label>
+      <label className="text-sm font-medium text-slate-700">VIN (17 caracteres)<input required value={form.vin} maxLength={17} onChange={e => setForm({ ...form, vin: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })} placeholder="17 caracteres" className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 font-mono" /></label>
+      <label className="text-sm font-medium text-slate-700">Kilometraje<input required inputMode="numeric" value={form.mileage} maxLength={7} onChange={e => setForm({ ...form, mileage: e.target.value.replace(/\D/g, "") })} placeholder="54230" className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5" /><span className="mt-1 block text-xs text-slate-400">{form.mileage || "0"} km</span></label>
+      <label className="text-sm font-medium text-slate-700">Años de uso<input required inputMode="numeric" value={form.yearsOfUse} maxLength={2} onChange={e => setForm({ ...form, yearsOfUse: e.target.value.replace(/\D/g, "") })} placeholder="Ej. 2" className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5" /><span className="mt-1 block text-xs text-slate-400">Entre 0 y 40 años</span></label>
+    </div><div className="mt-5 flex gap-3"><button disabled={saving} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">{saving ? "Guardando..." : editingId ? "Guardar cambios" : "Agregar auto"}</button>{editingId && <button type="button" onClick={() => { setEditingId(null); setForm(blank()); }} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600">Cancelar</button>}</div></form>
+    <div className="grid gap-4 md:grid-cols-2">{loading ? <p className="text-sm text-slate-400">Cargando autos...</p> : vehicles.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">Todavía no registraste ningún auto.</div> : vehicles.map(v => <article key={v.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div><h3 className="font-bold text-slate-900">{v.vehicleType}</h3><p className="mt-1 font-mono text-sm text-slate-500">{v.plate}</p></div><div className="flex gap-2"><button onClick={() => edit(v)} className="text-xs font-semibold text-blue-600">Editar</button><button onClick={() => void remove(v.id)} className="text-xs font-semibold text-rose-600">Eliminar</button></div></div><dl className="mt-4 grid grid-cols-2 gap-3 text-sm"><div><dt className="text-slate-400">Kilometraje</dt><dd className="font-semibold text-slate-800">{v.mileage} km</dd></div><div><dt className="text-slate-400">Años de uso</dt><dd className="font-semibold text-slate-800">{v.yearsOfUse}</dd></div><div className="col-span-2"><dt className="text-slate-400">VIN</dt><dd className="break-all font-mono text-xs text-slate-700">{v.vin}</dd></div></dl></article>)}</div>
+  </>;
+}
