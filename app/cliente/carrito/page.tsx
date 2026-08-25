@@ -10,6 +10,7 @@ export default function ClienteCarritoPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rewardDiscount, setRewardDiscount] = useState(0);
 
   // Estado para los items seleccionados
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -18,8 +19,12 @@ export default function ClienteCarritoPage() {
     const loadData = async () => {
       try {
         setLoading(true);
-        const cartData = await apiFetch<Cart>("/cart");
+        const [cartData, rewards] = await Promise.all([
+          apiFetch<Cart>("/cart"),
+          apiFetch<{ activeDiscountPercent: number }>("/rewards/me").catch(() => ({ activeDiscountPercent: 0 })),
+        ]);
         setCart(cartData);
+        setRewardDiscount(rewards.activeDiscountPercent ?? 0);
         // Por defecto, seleccionar todos los productos
         if (cartData && cartData.items) {
           setSelectedIds(cartData.items.map(i => i.id));
@@ -50,17 +55,20 @@ export default function ClienteCarritoPage() {
 
   // Cálculos dinámicos basados en la selección
   const totals = useMemo(() => {
-    if (!cart) return { subtotal: 0, discountAmount: 0, total: 0 };
+    if (!cart) return { subtotal: 0, discountAmount: 0, rewardDiscountAmount: 0, total: 0 };
     const selectedItems = cart.items.filter(item => selectedIds.includes(item.id));
     const subtotal = selectedItems.reduce((acc, item) => acc + (item.subtotal || 0), 0);
     // Aplicamos descuento si existe en el carrito
     const discountAmount = (subtotal * (cart.discount || 0)) / 100;
+    const afterCartDiscount = subtotal - discountAmount;
+    const rewardDiscountAmount = (afterCartDiscount * rewardDiscount) / 100;
     return {
       subtotal,
       discountAmount,
-      total: subtotal - discountAmount
+      rewardDiscountAmount,
+      total: afterCartDiscount - rewardDiscountAmount
     };
-  }, [cart, selectedIds]);
+  }, [cart, selectedIds, rewardDiscount]);
 
   const removeCartItem = async (itemId: number) => {
     try {
@@ -81,6 +89,11 @@ export default function ClienteCarritoPage() {
     const selectedItems = cart?.items.filter(item => selectedIds.includes(item.id)) ?? [];
     return selectedItems.length > 0 && selectedItems.every(item => item.deliveryAvailable === true);
   }, [cart, selectedIds]);
+  const rewardPointsPreview = useMemo(() => cart?.items.filter(item => selectedIds.includes(item.id)).reduce((sum, item) => {
+    const price = item.price ?? 0;
+    const points = price < 50 ? 5 : price < 100 ? 10 : price < 500 ? 25 : price < 1000 ? 60 : 120;
+    return sum + (item.quantity ?? 0) * points;
+  }, 0) ?? 0, [cart, selectedIds]);
 
   useEffect(() => {
     if (!deliveryAvailableForSelection && deliveryType === "DELIVERY") {
@@ -237,6 +250,12 @@ export default function ClienteCarritoPage() {
                     <span>- S/ {totals.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
+                {totals.rewardDiscountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-400 text-xs font-black">
+                    <span>Recompensa Carvex ({rewardDiscount}%)</span>
+                    <span>- S/ {totals.rewardDiscountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="h-px bg-white/10 my-2" />
                 <div className="flex flex-col gap-0.5">
                   <span className="font-black text-blue-500 uppercase text-[9px] tracking-[0.3em]">Total a pagar</span>
@@ -329,6 +348,9 @@ export default function ClienteCarritoPage() {
                       Algunos productos seleccionados no tienen delivery. Este pedido será para recojo en tienda.
                     </p>
                   )}
+                </div>
+                <div className="rounded-xl border border-amber-300/20 bg-amber-400/10 px-3 py-2 text-xs font-bold text-amber-300">
+                  ✦ Puntos Carvex: +{rewardPointsPreview} <span className="block pt-0.5 text-[10px] font-medium text-amber-100/70">Se acreditan al confirmarse tu pago.</span>
                 </div>
 
                 {deliveryType === "DELIVERY" ? (

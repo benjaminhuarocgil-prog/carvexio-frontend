@@ -217,8 +217,9 @@ export default function ClienteComprasPage() {
                     </div>
                     <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
                       <span className="text-sm font-bold text-slate-500">Total pagado</span>
-                      <span className="text-xl font-black text-slate-900">S/ {order.totalAmount.toFixed(2)}</span>
+                      <span className="text-xl font-black text-slate-900">S/ {(order.paidAmount ?? order.totalAmount).toFixed(2)}</span>
                     </div>
+                    {(order.discountAmount ?? 0) > 0 && <p className="mt-2 text-right text-xs font-bold text-emerald-600">Recompensa Carvex aplicada: - S/ {order.discountAmount?.toFixed(2)}</p>}
                   </div>
 
                   <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100 flex flex-col justify-center">

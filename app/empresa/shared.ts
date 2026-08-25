@@ -156,6 +156,8 @@ export type Order = {
   businessId: number;
   businessName: string;
   totalAmount: number;
+  discountAmount?: number;
+  paidAmount?: number;
   status: string;
   deliveryMethod?: "DELIVERY" | "PICKUP";
   address: string;
