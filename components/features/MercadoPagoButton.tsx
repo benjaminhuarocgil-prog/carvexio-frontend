@@ -19,9 +19,11 @@ declare global {
 export default function MercadoPagoButton({ orderId, title, amount, onSuccess }: MercadoPagoButtonProps) {
     const [loading, setLoading] = useState(false);
     const [testing, setTesting] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
 
     const handlePayment = async () => {
         setLoading(true);
+        setPaymentError(null);
         try {
             // 1. Llamamos a tu Backend para crear la preferencia
             const preferenceId = await apiFetch<string>("/payments/create-preference", {
@@ -37,10 +39,17 @@ export default function MercadoPagoButton({ orderId, title, amount, onSuccess }:
                 })
             });
 
+            if (!preferenceId || preferenceId.startsWith("Error")) {
+                throw new Error(preferenceId || "No se pudo crear la preferencia de pago.");
+            }
+
             // 2. Inicializamos el SDK de Mercado Pago con tu Public Key
             const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
             if (!publicKey) {
                 throw new Error("Falta configurar NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY");
+            }
+            if (typeof window.MercadoPago !== "function") {
+                throw new Error("El sistema de pagos todavía no terminó de cargar. Actualiza la página e inténtalo nuevamente.");
             }
             const mp = new window.MercadoPago(publicKey, {
                 locale: "es-PE" // o tu país
@@ -54,7 +63,7 @@ export default function MercadoPagoButton({ orderId, title, amount, onSuccess }:
 
         } catch (error) {
             console.error("Error en el pago:", error);
-            alert("No se pudo iniciar el pago. Revisa la consola.");
+            setPaymentError(error instanceof Error ? error.message : "No se pudo iniciar el pago.");
         } finally {
             setLoading(false);
         }
@@ -80,7 +89,8 @@ export default function MercadoPagoButton({ orderId, title, amount, onSuccess }:
     };
 
     return (
-        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+        <div className="mt-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <button
                 onClick={handlePayment}
                 disabled={loading || testing}
@@ -115,6 +125,12 @@ export default function MercadoPagoButton({ orderId, title, amount, onSuccess }:
                     </>
                 )}
             </button>
+          </div>
+          {paymentError && (
+            <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+              No se pudo iniciar el pago: {paymentError}
+            </p>
+          )}
         </div>
     );
 }
