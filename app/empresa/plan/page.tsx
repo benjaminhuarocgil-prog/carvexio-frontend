@@ -59,23 +59,25 @@ export default function EmpresaPlanPage() {
     }
 
     setPayingId(plan.id);
+    // Abrimos una pestaña vacía durante el clic del usuario para evitar bloqueadores.
+    // Así el cierre/cancelación de Mercado Pago no bloquea el panel de la empresa.
+    const checkoutWindow = window.open("", "_blank");
     try {
-      const preferenceId = await apiFetch<string>("/payments/create-plan-preference", {
+      const checkout = await apiFetch<{ initPoint: string }>("/payments/create-plan-preference", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId: plan.id }),
       });
 
-      const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY;
-      if (!publicKey) {
-        throw new Error("Falta configurar NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY");
+      if (!checkout.initPoint) throw new Error("No se recibió la URL de pago de Mercado Pago.");
+      if (checkoutWindow) {
+        checkoutWindow.location.href = checkout.initPoint;
+      } else {
+        // Si el navegador bloquea pestañas, mantenemos el retorno configurado por Mercado Pago.
+        window.location.assign(checkout.initPoint);
       }
-      const mp = new window.MercadoPago(publicKey, { locale: "es-PE" });
-      mp.checkout({
-        preference: { id: preferenceId },
-        autoOpen: true,
-      });
     } catch (err) {
+      checkoutWindow?.close();
       console.error("Error suscribiendo al plan:", err);
       alert(err instanceof Error ? err.message : "No se pudo iniciar el pago del plan");
     } finally {
