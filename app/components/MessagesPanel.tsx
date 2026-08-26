@@ -16,6 +16,9 @@ type Message = {
   content: string;
   createdAt: string;
   mine: boolean;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachmentType?: string;
 };
 
 export default function MessagesPanel({ mode }: { mode: "client" | "business" }) {
@@ -27,6 +30,7 @@ export default function MessagesPanel({ mode }: { mode: "client" | "business" })
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
+  const attachmentRef = useRef<HTMLInputElement | null>(null);
 
   const loadContacts = useCallback(async () => {
     const data = await apiFetch<Contact[]>(`/messages/contacts?mode=${mode}`);
@@ -94,6 +98,24 @@ export default function MessagesPanel({ mode }: { mode: "client" | "business" })
     }
   };
 
+  const sendAttachment = async (file: File) => {
+    if (!selected || sending) return;
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+      setError("Solo puedes enviar imágenes o archivos PDF."); return;
+    }
+    try {
+      setSending(true); setError(null);
+      const form = new FormData();
+      form.append("file", file); form.append("businessId", String(selected.businessId));
+      if (mode === "business" && selected.clientId) form.append("clientId", String(selected.clientId));
+      form.append("content", text.trim());
+      await apiFetch(`/messages/attachment?mode=${mode}`, { method: "POST", body: form });
+      setText("");
+      await Promise.all([loadConversation(selected, true), loadContacts()]);
+    } catch (err) { setError(err instanceof Error ? err.message : "No se pudo enviar el archivo."); }
+    finally { setSending(false); }
+  };
+
   const contactLabel = mode === "client" ? "negocios" : "clientes";
   const emptyText = mode === "client"
     ? "Aún no tienes compras ni reservas para iniciar una conversación."
@@ -158,6 +180,7 @@ export default function MessagesPanel({ mode }: { mode: "client" | "business" })
                   <div key={message.id} className={`flex ${message.mine ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${message.mine ? "rounded-br-md bg-orange-500 text-white" : "rounded-bl-md bg-blue-500 text-white"}`}>
                       <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                      {message.attachmentUrl && (message.attachmentType?.startsWith("image/") ? <a href={message.attachmentUrl} target="_blank" rel="noreferrer"><img src={message.attachmentUrl} alt={message.attachmentName || "Imagen adjunta"} className="mt-2 max-h-56 rounded-xl object-cover" /></a> : <a href={message.attachmentUrl} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-xs font-bold underline">📄 {message.attachmentName || "Abrir PDF"}</a>)}
                       <p className={`mt-1 text-[10px] ${message.mine ? "text-orange-100" : "text-blue-100"}`}>{message.createdAt ? new Date(message.createdAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }) : ""}</p>
                     </div>
                   </div>
@@ -165,6 +188,8 @@ export default function MessagesPanel({ mode }: { mode: "client" | "business" })
                 <div ref={endRef} />
               </div>
               <form onSubmit={sendMessage} className="flex gap-3 border-t border-slate-100 p-4">
+                <input ref={attachmentRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void sendAttachment(file); event.currentTarget.value = ""; }} />
+                <button type="button" disabled={sending} onClick={() => attachmentRef.current?.click()} title="Adjuntar foto o PDF" className="rounded-xl border border-slate-200 px-3 text-lg text-slate-500 hover:bg-slate-50 disabled:opacity-50">📎</button>
                 <input value={text} onChange={event => setText(event.target.value)} maxLength={2000} placeholder="Escribe un mensaje..."
                   className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100" />
                 <button disabled={!text.trim() || sending} className="rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50">

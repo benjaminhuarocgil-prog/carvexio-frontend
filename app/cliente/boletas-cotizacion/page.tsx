@@ -1,0 +1,14 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { apiFetch } from "../../../lib/api";
+
+type Quote = { id: number; serviceName?: string; vehicleDescription?: string; diagnosis: string; totalAmount: number; sentAt?: string; diagnosisPhotoUrls?: string[]; items: { description: string; quantity: number; subtotal: number }[] };
+
+export default function BoletasCotizacionPage() {
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { apiFetch<Quote[]>("/quotations/my").then(data => setQuotes(Array.isArray(data) ? data : [])).catch(err => setError(err instanceof Error ? err.message : "No se pudieron cargar las boletas.")).finally(() => setLoading(false)); }, []);
+  return <div className="mx-auto max-w-5xl space-y-6"><header><p className="text-xs font-black uppercase tracking-[.2em] text-blue-600">Documentos enviados por tu taller</p><h1 className="mt-2 text-3xl font-black text-slate-900">Boletas de Cotización</h1><p className="mt-2 text-sm text-slate-500">Aquí aparecen únicamente las cotizaciones que tu taller ya aprobó y te envió.</p></header>{error && <p className="rounded-2xl bg-rose-50 p-4 text-sm font-semibold text-rose-700">{error}</p>}{loading ? <p className="text-sm text-slate-400">Cargando boletas...</p> : quotes.length === 0 ? <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Aún no tienes boletas de cotización enviadas.</div> : <div className="grid gap-5 md:grid-cols-2">{quotes.map(quote => <article key={quote.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><p className="text-xs font-black uppercase tracking-widest text-blue-600">Boleta #{quote.id}</p><h2 className="mt-2 text-lg font-black text-slate-900">{quote.serviceName || "Servicio de taller"}</h2><p className="text-xs text-slate-500">{quote.vehicleDescription}</p><div className="mt-4 rounded-2xl bg-slate-50 p-4"><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Diagnóstico</p><p className="mt-1 text-sm text-slate-700">{quote.diagnosis}</p></div><div className="mt-4 space-y-1 text-sm">{quote.items.map((item, index) => <div key={index} className="flex justify-between"><span>{item.quantity}× {item.description}</span><strong>S/ {item.subtotal.toFixed(2)}</strong></div>)}</div><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><strong className="text-lg text-slate-900">S/ {quote.totalAmount.toFixed(2)}</strong><button onClick={() => window.open(`/api/backend/quotations/my/${quote.id}/receipt`, "_blank", "noopener,noreferrer")} className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white hover:bg-blue-600">Ver / descargar PDF</button></div></article>)}</div>}</div>;
+}

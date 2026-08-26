@@ -9,6 +9,7 @@ type Quote = {
   id: number; bookingId: number; clientName: string; clientPhone?: string | null;
   serviceName?: string | null; vehicleDescription?: string | null; diagnosis: string;
   status: "DRAFT" | "APPROVED"; totalAmount: number; createdAt: string; approvedAt?: string | null;
+  sentToClient?: boolean; diagnosisPhotoUrls?: string[];
   items: QuoteItem[];
 };
 
@@ -23,6 +24,8 @@ export default function CotizacionesPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const total = useMemo(() => items.reduce((sum, item) => sum + Math.max(0, item.quantity || 0) * Math.max(0, item.unitPrice || 0), 0), [items]);
 
@@ -54,14 +57,25 @@ export default function CotizacionesPage() {
     try {
       await apiFetch<Quote>("/quotations", {
         method: "POST",
-        body: JSON.stringify({ bookingId: Number(bookingId), diagnosis, items }),
+        body: JSON.stringify({ bookingId: Number(bookingId), diagnosis, diagnosisPhotoUrls: photoUrls, items }),
       });
-      setBookingId(""); setDiagnosis(""); setItems([emptyItem()]);
+      setBookingId(""); setDiagnosis(""); setItems([emptyItem()]); setPhotoUrls([]);
       setNotice("Cotización guardada. Cuando el cliente acepte, podrás aprobarla y generar su boleta.");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar la cotización.");
     } finally { setCreating(false); }
+  };
+
+  const uploadPhoto = async (file: File) => {
+    if (!file.type.startsWith("image/")) { setError("Solo puedes subir fotos del diagnóstico."); return; }
+    try {
+      setUploadingPhoto(true); setError(null);
+      const data = new FormData(); data.append("file", file);
+      const result = await apiFetch<{ url: string }>("/quotations/diagnosis-photo", { method: "POST", body: data });
+      setPhotoUrls(previous => [...previous, result.url]);
+    } catch (err) { setError(err instanceof Error ? err.message : "No se pudo subir la foto."); }
+    finally { setUploadingPhoto(false); }
   };
 
   const approve = async (id: number) => {
@@ -71,6 +85,14 @@ export default function CotizacionesPage() {
       setNotice("Cotización aprobada. Ya puedes generar la boleta PDF.");
       await load();
     } catch (err) { setError(err instanceof Error ? err.message : "No se pudo aprobar la cotización."); }
+  };
+
+  const sendToClient = async (id: number) => {
+    try {
+      await apiFetch(`/quotations/${id}/send`, { method: "POST" });
+      setNotice("Boleta enviada al cliente. Ya la puede ver y descargar en su panel.");
+      await load();
+    } catch (err) { setError(err instanceof Error ? err.message : "No se pudo enviar la boleta."); }
   };
 
   return <div className="mx-auto max-w-6xl space-y-8">
@@ -92,6 +114,7 @@ export default function CotizacionesPage() {
       </select>
       <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">Diagnóstico encontrado</label>
       <textarea required rows={4} value={diagnosis} onChange={event => setDiagnosis(event.target.value)} placeholder="Ej.: Se encontraron neumáticos pinchados y desgaste irregular en la suspensión." className="mb-7 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 outline-none focus:border-blue-500" />
+      <div className="mb-7 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wider text-slate-600">Fotos del diagnóstico</p><p className="mt-1 text-xs text-slate-500">Adjunta evidencias de lo encontrado en el vehículo.</p></div><label className="cursor-pointer rounded-xl bg-white px-4 py-2 text-xs font-black text-blue-700 shadow-sm ring-1 ring-slate-200 hover:bg-blue-50">{uploadingPhoto ? "Subiendo..." : "+ Subir foto"}<input type="file" accept="image/*" disabled={uploadingPhoto} className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void uploadPhoto(file); event.currentTarget.value = ""; }} /></label></div>{photoUrls.length > 0 && <div className="mt-4 flex flex-wrap gap-3">{photoUrls.map((url, index) => <div key={url} className="relative"><img src={url} alt={`Diagnóstico ${index + 1}`} className="h-20 w-24 rounded-xl object-cover ring-1 ring-slate-200" /><button type="button" onClick={() => setPhotoUrls(previous => previous.filter((_, photoIndex) => photoIndex !== index))} className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-rose-600 text-xs font-black text-white">×</button></div>)}</div>}</div>
 
       <div className="mb-3 flex items-center justify-between"><div><h3 className="font-black text-slate-900">Cotización</h3><p className="text-xs text-slate-500">Piezas, mano de obra o trabajos adicionales.</p></div><button type="button" onClick={() => setItems(previous => [...previous, emptyItem()])} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 hover:bg-blue-100">+ Agregar ítem</button></div>
       <div className="space-y-3">
@@ -108,9 +131,9 @@ export default function CotizacionesPage() {
 
     <section><div className="mb-4"><h2 className="text-xl font-black text-slate-900">Cotizaciones registradas</h2><p className="text-sm text-slate-500">Aprobación y emisión de boletas.</p></div>
       <div className="grid gap-5 lg:grid-cols-2">{quotes.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-sm text-slate-500">Aún no registraste cotizaciones.</p> : quotes.map(quote => <article key={quote.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-blue-600">Cotización #{quote.id}</p><h3 className="mt-1 text-lg font-black text-slate-900">{quote.clientName}</h3><p className="text-xs text-slate-500">{quote.serviceName} {quote.vehicleDescription ? `· ${quote.vehicleDescription}` : ""}</p></div><span className={`rounded-full px-3 py-1 text-xs font-black ${quote.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{quote.status === "APPROVED" ? "APROBADA" : "PENDIENTE"}</span></div>
-        <div className="mt-5 rounded-2xl bg-slate-50 p-4"><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Diagnóstico</p><p className="mt-1 text-sm text-slate-700">{quote.diagnosis}</p></div>
+        <div className="mt-5 rounded-2xl bg-slate-50 p-4"><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Diagnóstico</p><p className="mt-1 text-sm text-slate-700">{quote.diagnosis}</p>{(quote.diagnosisPhotoUrls?.length ?? 0) > 0 && <div className="mt-3 flex gap-2 overflow-x-auto">{quote.diagnosisPhotoUrls?.map(url => <a key={url} href={url} target="_blank" rel="noreferrer"><img src={url} alt="Foto de diagnóstico" className="h-16 w-20 rounded-lg object-cover" /></a>)}</div>}</div>
         <div className="mt-4 space-y-2">{quote.items.map((item, index) => <div key={index} className="flex justify-between gap-4 text-sm"><span className="text-slate-600">{item.quantity}× {item.description}</span><strong className="text-slate-900">S/ {(item.subtotal ?? item.quantity * item.unitPrice).toFixed(2)}</strong></div>)}</div>
-        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><span className="font-black text-slate-900">Total: S/ {quote.totalAmount.toFixed(2)}</span>{quote.status === "APPROVED" ? <button onClick={() => window.open(`/api/backend/quotations/${quote.id}/receipt`, "_blank", "noopener,noreferrer")} className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-500">Generar boleta PDF</button> : <button onClick={() => approve(quote.id)} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-500">Aprobar cotización</button>}</div>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4"><span className="font-black text-slate-900">Total: S/ {quote.totalAmount.toFixed(2)}</span>{quote.status === "APPROVED" ? <div className="flex gap-2"><button onClick={() => window.open(`/api/backend/quotations/${quote.id}/receipt`, "_blank", "noopener,noreferrer")} className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white hover:bg-slate-700">Ver boleta PDF</button><button disabled={quote.sentToClient} onClick={() => void sendToClient(quote.id)} className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-500 disabled:opacity-60">{quote.sentToClient ? "Enviada al cliente" : "Enviar boleta al cliente"}</button></div> : <button onClick={() => approve(quote.id)} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-500">Aprobar cotización</button>}</div>
       </article>)}</div>
     </section>
   </div>;

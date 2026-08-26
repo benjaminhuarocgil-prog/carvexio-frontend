@@ -82,6 +82,16 @@ export default function ClienteComprasPage() {
       .finally(() => setLoading(false));
   };
 
+  const hideOrder = async (id: number) => {
+    if (!confirm("¿Quitar este pedido de tu historial? El taller conservará el registro para su gestión.")) return;
+    try {
+      await apiFetch(`/orders/${id}/my-history`, { method: "DELETE" });
+      setOrders(previous => previous.filter(order => order.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo quitar el pedido.");
+    }
+  };
+
   useEffect(() => {
     loadOrders();
   }, []);
@@ -181,8 +191,11 @@ export default function ClienteComprasPage() {
                         <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">#Pedido {order.id}</span>
                       </span>
                     </div>
-                    <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wide ml-auto ${getStatusColor(order.status)}`}>
-                      {getStatusLabel(order.status)}
+                    <div className="ml-auto flex items-center gap-2">
+                      <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wide ${getStatusColor(order.status)}`}>{getStatusLabel(order.status)}</div>
+                      <button onClick={() => void hideOrder(order.id)} title="Quitar de mi historial" className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>
+                      </button>
                     </div>
                   </div>
                 </div>
