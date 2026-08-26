@@ -36,6 +36,9 @@ export async function apiFetch<T = unknown>(
         const parsed = JSON.parse(body);
         if (typeof parsed?.message === "string" && parsed.message.trim()) {
           message = parsed.message;
+        } else if (typeof parsed?.detail === "string" && parsed.detail.trim()) {
+          // Spring Boot 3 responde errores de validación como ProblemDetail.
+          message = parsed.detail;
         }
       } catch {
         // body no era JSON, seguimos con el formato genérico de abajo

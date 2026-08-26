@@ -29,6 +29,7 @@ export type CartItem = {
   businessName?: string | null;
   price?: number | null;
   quantity?: number | null;
+  stock?: number | null;
   subtotal?: number | null;
   deliveryAvailable?: boolean | null;
 };

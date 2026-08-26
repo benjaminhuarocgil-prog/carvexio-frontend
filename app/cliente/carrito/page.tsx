@@ -95,6 +95,13 @@ export default function ClienteCarritoPage() {
     return sum + (item.quantity ?? 0) * points;
   }, 0) ?? 0, [cart, selectedIds]);
 
+  const selectedItemsWithInsufficientStock = useMemo(() =>
+    cart?.items.filter(item => selectedIds.includes(item.id)
+      && item.stock != null
+      && (item.quantity ?? 0) > item.stock) ?? [],
+    [cart, selectedIds]
+  );
+
   useEffect(() => {
     if (!deliveryAvailableForSelection && deliveryType === "DELIVERY") {
       setDeliveryType("PICKUP");
@@ -201,6 +208,11 @@ export default function ClienteCarritoPage() {
                     <div className="text-lg font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{item.productName ?? "Producto"}</div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="text-[10px] font-black uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md tracking-wider">Cant: {item.quantity}</span>
+                      {item.stock != null && (item.quantity ?? 0) > item.stock && (
+                        <span className="text-[10px] font-black uppercase bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md tracking-wider">
+                          Solo quedan {item.stock}
+                        </span>
+                      )}
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
                         {item.businessName || "Empresa / Tienda Automotriz"}
                       </span>
@@ -265,13 +277,18 @@ export default function ClienteCarritoPage() {
 
               <button
                 type="button"
-                disabled={selectedIds.length === 0}
+                disabled={selectedIds.length === 0 || selectedItemsWithInsufficientStock.length > 0}
                 onClick={() => setCheckoutModal(true)}
                 className="mt-6 w-full py-4 rounded-xl bg-blue-600 text-white font-black text-sm hover:bg-white hover:text-slate-900 transition-all shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
               >
-                Confirmar compra
+                {selectedItemsWithInsufficientStock.length > 0 ? "Stock insuficiente" : "Confirmar compra"}
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="group-hover:translate-x-1 transition-transform"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
               </button>
+              {selectedItemsWithInsufficientStock.length > 0 && (
+                <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                  Ajusta tu carrito: la cantidad elegida supera el stock disponible de {selectedItemsWithInsufficientStock.map(item => item.productName).join(", ")}.
+                </p>
+              )}
 
               <div className="flex items-center justify-center gap-3 pt-4 mt-2 border-t border-white/5 opacity-40">
                 <div className="text-[8px] font-black uppercase tracking-widest">Pago Seguro</div>
