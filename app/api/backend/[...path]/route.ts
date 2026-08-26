@@ -70,17 +70,19 @@ async function handleRequest(req: NextRequest, paramsPromise: any, method: strin
       return new NextResponse(null, { status: 204 });
     }
 
-    const responseText = await response.text();
+    const isPdf = response.headers.get('Content-Type')?.includes('application/pdf');
+    const responseBody = isPdf ? await response.arrayBuffer() : await response.text();
 
     // Log en consola del servidor para debug
     if (!response.ok) {
-      console.error(`Backend Error [${method} ${url}]: ${response.status} - ${responseText}`);
+      console.error(`Backend Error [${method} ${url}]: ${response.status} - ${typeof responseBody === 'string' ? responseBody : 'PDF response'}`);
     }
 
-    return new NextResponse(responseText, {
+    return new NextResponse(responseBody, {
       status: response.status,
       headers: {
         'Content-Type': response.headers.get('Content-Type') || 'application/json',
+        ...(response.headers.get('Content-Disposition') ? { 'Content-Disposition': response.headers.get('Content-Disposition')! } : {}),
       },
     });
   } catch (error) {
