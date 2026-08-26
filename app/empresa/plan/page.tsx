@@ -17,8 +17,8 @@ export default function EmpresaPlanPage() {
   const [payingId, setPayingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = () => {
-    setLoading(true);
+  const loadData = (silent = false) => {
+    if (!silent) setLoading(true);
     Promise.all([
       apiFetch<Plan[]>("/plans"),
       apiFetch<Business>("/business/me"),
@@ -27,16 +27,21 @@ export default function EmpresaPlanPage() {
         setPlans(Array.isArray(plansData) ? plansData : []);
         setBusiness(businessData);
       })
-      .catch(err => setError(err instanceof Error ? err.message : "Error cargando planes"))
-      .finally(() => setLoading(false));
+      .catch(err => {
+        if (!silent) setError(err instanceof Error ? err.message : "Error cargando planes");
+      })
+      .finally(() => { if (!silent) setLoading(false); });
   };
 
   useEffect(() => {
     loadData();
 
-    // Al volver del checkout de Mercado Pago (modal o pestaña), refrescamos
-    // el plan actual por si el webhook ya confirmó el pago.
-    const handleFocus = () => loadData();
+    // Si el usuario cierra o cancela Mercado Pago, liberamos el botón siempre.
+    // La actualización es silenciosa para no bloquear todo el panel con un spinner.
+    const handleFocus = () => {
+      setPayingId(null);
+      void loadData(true);
+    };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
   }, []);
