@@ -65,7 +65,7 @@ export default function ClienteSidebar({ profile, email }: { profile: UserProfil
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map(item => (
           <NavItem key={item.href} label={item.label} icon={item.icon} href={item.href}
-            active={pathname.startsWith(item.href)} badge={item.badge} />
+            active={pathname === item.href || pathname.startsWith(`${item.href}/`)} badge={item.badge} />
         ))}
 
         <div className="pt-4 mt-4 border-t border-slate-100">
