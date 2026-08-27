@@ -142,6 +142,14 @@ export type DashboardData = {
   productoMasVendido?: string;
 };
 
+export type PlatformNotification = {
+  id: number;
+  message: string;
+  commissionRate?: number | null;
+  createdAt: string;
+  dismissed: boolean;
+};
+
 
 export type Report = {
   totalReservas: number;

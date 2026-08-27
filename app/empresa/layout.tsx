@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { apiFetch } from "../../lib/api";
-import { Business } from "./shared";
+import { Business, PlatformNotification } from "./shared";
 import BusinessSetupForm from "./components/BusinessSetupForm";
 import EmpresaSidebar from "./components/EmpresaSidebar";
 import { BranchProvider } from "./context/BranchContext";
@@ -14,6 +14,7 @@ export default function EmpresaLayout({ children }: { children: React.ReactNode 
   const [loadingBusiness, setLoadingBusiness] = useState(true);
   const [business, setBusiness] = useState<Business | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const [notifications, setNotifications] = useState<PlatformNotification[]>([]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -46,6 +47,25 @@ export default function EmpresaLayout({ children }: { children: React.ReactNode 
       })
       .finally(() => setLoadingBusiness(false));
   }, [router, user, isLoading]);
+
+  useEffect(() => {
+    if (!business || business.status !== "APPROVED") return;
+    const loadNotifications = () => apiFetch<PlatformNotification[]>("/business-notifications")
+      .then(data => setNotifications(Array.isArray(data) ? data : []))
+      .catch(() => setNotifications([]));
+    void loadNotifications();
+    const timer = window.setInterval(loadNotifications, 30000);
+    return () => window.clearInterval(timer);
+  }, [business]);
+
+  const dismissNotification = async (id: number) => {
+    try {
+      await apiFetch(`/business-notifications/${id}/dismiss`, { method: "PATCH" });
+      setNotifications(previous => previous.map(item => item.id === id ? { ...item, dismissed: true } : item));
+    } catch {
+      // The notification remains visible so the business can retry closing it.
+    }
+  };
 
   if (isLoading || loadingBusiness) {
     return (
@@ -103,6 +123,12 @@ export default function EmpresaLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
+      {notifications.filter(notification => !notification.dismissed).slice(0, 1).map(notification => (
+        <div key={notification.id} className="bg-violet-50 border-b border-violet-200 px-5 py-3 text-violet-950 text-xs font-medium flex items-start justify-between gap-3 shrink-0">
+          <div><span className="font-bold">Notificación de la plataforma{notification.commissionRate ? ` · Comisión ${notification.commissionRate}%` : ""}:</span> <span className="whitespace-pre-wrap">{notification.message}</span></div>
+          <button type="button" onClick={() => dismissNotification(notification.id)} aria-label="Cerrar notificación" className="shrink-0 rounded p-1 text-violet-700 hover:bg-violet-100">✕</button>
+        </div>
+      ))}
       {business?.status === "PENDING" && (
         <div className="bg-amber-50 border-b border-amber-200 px-5 py-3.5 text-amber-800 text-xs font-semibold flex items-center justify-between gap-3 shrink-0 animate-in slide-in-from-top duration-500">
           <div className="flex items-center gap-2.5">

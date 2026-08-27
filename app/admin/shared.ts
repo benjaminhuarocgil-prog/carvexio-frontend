@@ -25,6 +25,14 @@ export type AdminBusinessPurchase = {
   createdAt: string;
 };
 
+export type PlatformNotification = {
+  id: number;
+  message: string;
+  commissionRate?: number | null;
+  createdAt: string;
+  dismissed?: boolean;
+};
+
 export type BusinessRevenue = {
   businessName: string;
   totalRevenue: number;
