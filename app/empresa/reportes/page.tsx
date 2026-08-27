@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { apiFetch } from "../../../lib/api";
+import { peruTodayIso } from "../../../lib/datetime";
 import { Report } from "../shared";
 import { KpiCard } from "../components/KpiCard";
 import { useBranch } from "../context/BranchContext";
@@ -19,7 +20,7 @@ export default function EmpresaReportesPage() {
     const loadData = async () => {
       try {
         setLoading(true);
-        const today = new Date().toISOString().split("T")[0];
+        const today = peruTodayIso();
         const monthStart = today.slice(0, 8) + "01";
         const branchParam = selectedBranch ? `&localId=${selectedBranch.id}` : "";
         const reportData = await apiFetch<Report>(`/reports?start=${monthStart}&end=${today}${branchParam}`);

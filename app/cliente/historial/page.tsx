@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../../lib/api";
+import { formatPeruDate } from "../../../lib/datetime";
 import { Booking, Order } from "../shared";
 
 type UnifiedHistoryItem = {
@@ -49,7 +50,7 @@ export default function ClienteHistorialPage() {
               type: "PRODUCT",
               title: itemNames,
               businessName: o.businessName || "Empresa Automotriz",
-              date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "-",
+              date: formatPeruDate(o.createdAt),
               amount: o.totalAmount,
               status: o.status
             };

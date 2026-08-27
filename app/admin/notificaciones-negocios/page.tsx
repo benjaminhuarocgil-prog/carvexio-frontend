@@ -5,6 +5,7 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "../../../lib/api";
 import { PlatformNotification } from "../shared";
+import { formatPeruDateTime } from "../../../lib/datetime";
 
 export default function AdminBusinessNotificationsPage() {
   const { user, isLoading } = useUser();
@@ -75,7 +76,7 @@ export default function AdminBusinessNotificationsPage() {
             <p className="text-sm text-slate-700 whitespace-pre-wrap">{notification.message}</p>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
               <span>Comisión informada: {notification.commissionRate ?? "—"}%</span>
-              <span>{new Date(notification.createdAt).toLocaleString("es-PE", { dateStyle: "long", timeStyle: "short" })}</span>
+              <span>{formatPeruDateTime(notification.createdAt, { dateStyle: "long", timeStyle: "short" })}</span>
             </div>
           </article>
         ))}

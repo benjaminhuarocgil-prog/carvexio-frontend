@@ -5,6 +5,7 @@ import { Fragment, useEffect, useState } from "react";
 import { apiFetch } from "../../../lib/api";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { AdminBusiness, AdminBusinessPurchase, statusColor, statusLabel } from "../shared";
+import { formatPeruDateTime } from "../../../lib/datetime";
 
 export default function AdminNegociosPage() {
   const router = useRouter();
@@ -203,7 +204,7 @@ export default function AdminNegociosPage() {
                                     <td className="py-2.5">S/ {purchase.paidAmount.toLocaleString("es-PE", { minimumFractionDigits: 2 })}</td>
                                     <td className="py-2.5 font-semibold text-violet-700">S/ {purchase.adminAmount.toLocaleString("es-PE", { minimumFractionDigits: 2 })} <span className="font-normal text-slate-400">({purchase.commissionRate}%)</span></td>
                                     <td className="py-2.5 font-semibold text-emerald-700">S/ {purchase.businessAmount.toLocaleString("es-PE", { minimumFractionDigits: 2 })}</td>
-                                    <td className="py-2.5">{new Date(purchase.createdAt).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" })}</td>
+                                    <td className="py-2.5">{formatPeruDateTime(purchase.createdAt)}</td>
                                     <td className="py-2.5"><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">{purchase.status}</span></td>
                                   </tr>
                                 ))}

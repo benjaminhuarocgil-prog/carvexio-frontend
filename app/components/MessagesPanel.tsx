@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "../../lib/api";
+import { formatPeruTime } from "../../lib/datetime";
 
 type Contact = {
   businessId: number;
@@ -181,7 +182,7 @@ export default function MessagesPanel({ mode }: { mode: "client" | "business" })
                     <div className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${message.mine ? "rounded-br-md bg-orange-500 text-white" : "rounded-bl-md bg-blue-500 text-white"}`}>
                       <p className="whitespace-pre-wrap break-words">{message.content}</p>
                       {message.attachmentUrl && (message.attachmentType?.startsWith("image/") ? <a href={message.attachmentUrl} target="_blank" rel="noreferrer"><img src={message.attachmentUrl} alt={message.attachmentName || "Imagen adjunta"} className="mt-2 max-h-56 rounded-xl object-cover" /></a> : <a href={message.attachmentUrl} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 text-xs font-bold underline">📄 {message.attachmentName || "Abrir PDF"}</a>)}
-                      <p className={`mt-1 text-[10px] ${message.mine ? "text-orange-100" : "text-blue-100"}`}>{message.createdAt ? new Date(message.createdAt).toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }) : ""}</p>
+                      <p className={`mt-1 text-[10px] ${message.mine ? "text-orange-100" : "text-blue-100"}`}>{formatPeruTime(message.createdAt)}</p>
                     </div>
                   </div>
                 ))}

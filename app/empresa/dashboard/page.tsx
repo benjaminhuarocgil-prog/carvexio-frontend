@@ -7,6 +7,7 @@ import { useUser } from "@auth0/nextjs-auth0/client";
 import { DashboardData, Booking, Product, ClientSummary, statusColor, statusLabel } from "../shared";
 import { KpiCard } from "../components/KpiCard";
 import { useBranch } from "../context/BranchContext";
+import { peruTodayIso } from "../../../lib/datetime";
 
 export default function EmpresaDashboardPage() {
   const { user, isLoading } = useUser();
@@ -44,17 +45,9 @@ export default function EmpresaDashboardPage() {
     loadData();
   }, [user, isLoading, selectedBranch]);
 
-  const getLocalTodayStr = () => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
   const isSameDay = (bookingDate?: string | null) => {
     if (!bookingDate) return false;
-    const localToday = getLocalTodayStr();
+    const localToday = peruTodayIso();
     const cleanDate = bookingDate.split("T")[0].trim();
     return cleanDate === localToday;
   };

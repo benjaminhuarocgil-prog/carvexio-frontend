@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { apiFetch } from "../../../lib/api";
+import { formatPeruDate, formatPeruDateTime } from "../../../lib/datetime";
 import { Business, ClientSummary, ClientHistory, statusColor, statusLabel } from "../shared";
 import { useBranch } from "../context/BranchContext";
 
@@ -219,7 +220,7 @@ export default function EmpresaClientesPage() {
                   </td>
                   )}
                   <td className="px-5 py-3.5 text-slate-400 text-xs">
-                    {c.ultimaVisita ? new Date(c.ultimaVisita).toLocaleDateString("es-PE", { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
+                    {formatPeruDate(c.ultimaVisita, { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
                   {hasCrm && (
                   <td className="px-5 py-3.5 text-right">
@@ -292,7 +293,7 @@ export default function EmpresaClientesPage() {
                           </span>
                         </div>
                       </div>
-                      <div className="text-xs text-slate-500 mb-3">Fecha: {new Date(order.createdAt).toLocaleString("es-PE")}</div>
+                      <div className="text-xs text-slate-500 mb-3">Fecha: {formatPeruDateTime(order.createdAt)}</div>
                       
                       {/* Items */}
                       <div className="space-y-1.5 border-t border-slate-100 pt-2">

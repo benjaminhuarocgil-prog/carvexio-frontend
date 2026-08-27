@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../../lib/api";
 import { PlatformNotification } from "../shared";
+import { formatPeruDateTime } from "../../../lib/datetime";
 
 export default function EmpresaNotificationsPage() {
   const [notifications, setNotifications] = useState<PlatformNotification[]>([]);
@@ -26,7 +27,7 @@ export default function EmpresaNotificationsPage() {
     <div className="mt-6 space-y-3">
       {notifications.length === 0 ? <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400">No tienes notificaciones.</div> : notifications.map(notification => (
         <article key={notification.id} className={`rounded-2xl border p-5 shadow-sm ${notification.dismissed ? "border-slate-200 bg-slate-50 opacity-70" : "border-amber-200 bg-amber-50"}`}>
-          <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-bold text-slate-900">Aviso de comisión {notification.commissionRate ? `(${notification.commissionRate}%)` : ""}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{notification.message}</p><p className="mt-3 text-xs text-slate-500">{new Date(notification.createdAt).toLocaleString("es-PE", { dateStyle: "long", timeStyle: "short" })}</p></div>
+          <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-bold text-slate-900">Notificación de la plataforma</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{notification.message}</p><p className="mt-3 text-xs text-slate-500">{formatPeruDateTime(notification.createdAt, { dateStyle: "long", timeStyle: "short" })}</p></div>
           {!notification.dismissed && <button type="button" onClick={() => dismiss(notification.id)} aria-label="Cerrar notificación" className="rounded-lg p-1 text-slate-500 hover:bg-white hover:text-slate-900">✕</button>}</div>
         </article>
       ))}

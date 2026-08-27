@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { apiFetch } from "../../../lib/api";
+import { formatPeruDate, formatPeruTime } from "../../../lib/datetime";
 import { Order } from "../shared";
 import { useBranch } from "../context/BranchContext";
 
@@ -142,7 +143,7 @@ export default function EmpresaPedidosPage() {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-slate-900">{order.clientName}</h3>
-                      <p className="text-sm text-slate-500">Fecha: {new Date(order.createdAt).toLocaleDateString()} a las {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-sm text-slate-500">Fecha: {formatPeruDate(order.createdAt)} a las {formatPeruTime(order.createdAt)}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
