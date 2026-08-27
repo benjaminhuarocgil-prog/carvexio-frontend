@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { apiFetch } from "../../lib/api";
 import { useUser } from "@auth0/nextjs-auth0/client";
 
 export default function OnboardingPage() {
   const { user, isLoading } = useUser();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [selecting, setSelecting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +23,7 @@ export default function OnboardingPage() {
       });
 
       if (!res.ok) throw new Error("No se pudo guardar tu elección");
-      const referralCode = searchParams.get("ref");
+      const referralCode = new URLSearchParams(window.location.search).get("ref");
       if (role === "CLIENTE" && referralCode) await apiFetch(`/referrals/claim?code=${encodeURIComponent(referralCode)}`, { method: "POST" });
 
       // Redirigir directo al dashboard correcto (forzando re-login para refrescar el token)
