@@ -27,6 +27,16 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
       .finally(() => setLoadingProfile(false));
   }, [router, user, isLoading]);
 
+  useEffect(() => {
+    if (isLoading || !user) return;
+    const referralCode = new URLSearchParams(window.location.search).get("ref");
+    if (!referralCode) return;
+
+    apiFetch(`/referrals/claim?code=${encodeURIComponent(referralCode)}`, { method: "POST" })
+      .catch(() => { /* A referral can only be claimed once; never block client access. */ })
+      .finally(() => window.history.replaceState({}, "", window.location.pathname));
+  }, [isLoading, user]);
+
   if (isLoading || loadingProfile) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">

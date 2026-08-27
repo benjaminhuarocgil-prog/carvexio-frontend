@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "../../lib/api";
 import { useUser } from "@auth0/nextjs-auth0/client";
 
 export default function OnboardingPage() {
@@ -23,11 +22,11 @@ export default function OnboardingPage() {
       });
 
       if (!res.ok) throw new Error("No se pudo guardar tu elección");
-      const referralCode = new URLSearchParams(window.location.search).get("ref");
-      if (role === "CLIENTE" && referralCode) await apiFetch(`/referrals/claim?code=${encodeURIComponent(referralCode)}`, { method: "POST" });
-
       // Redirigir directo al dashboard correcto (forzando re-login para refrescar el token)
-      const returnTo = role === "EMPRESA" ? "/empresa/dashboard" : "/cliente/dashboard";
+      const referralCode = new URLSearchParams(window.location.search).get("ref");
+      const returnTo = role === "EMPRESA"
+        ? "/empresa/dashboard"
+        : `/cliente/dashboard${referralCode ? `?ref=${encodeURIComponent(referralCode)}` : ""}`;
       window.location.href = `/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al procesar");
