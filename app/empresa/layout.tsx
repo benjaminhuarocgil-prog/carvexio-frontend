@@ -125,7 +125,7 @@ export default function EmpresaLayout({ children }: { children: React.ReactNode 
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {notifications.filter(notification => !notification.dismissed).slice(0, 1).map(notification => (
         <div key={notification.id} className="bg-violet-50 border-b border-violet-200 px-5 py-3 text-violet-950 text-xs font-medium flex items-start justify-between gap-3 shrink-0">
-          <div><span className="font-bold">Notificación de la plataforma{notification.commissionRate ? ` · Comisión ${notification.commissionRate}%` : ""}:</span> <span className="whitespace-pre-wrap">{notification.message}</span></div>
+          <div><span className="font-bold">Notificación de la plataforma:</span> <span className="whitespace-pre-wrap">{notification.message}</span></div>
           <button type="button" onClick={() => dismissNotification(notification.id)} aria-label="Cerrar notificación" className="shrink-0 rounded p-1 text-violet-700 hover:bg-violet-100">✕</button>
         </div>
       ))}

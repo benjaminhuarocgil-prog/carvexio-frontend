@@ -13,6 +13,10 @@ export async function PUT(req: NextRequest, { params }: any) {
   return handleRequest(req, params, 'PUT');
 }
 
+export async function PATCH(req: NextRequest, { params }: any) {
+  return handleRequest(req, params, 'PATCH');
+}
+
 export async function DELETE(req: NextRequest, { params }: any) {
   return handleRequest(req, params, 'DELETE');
 }
