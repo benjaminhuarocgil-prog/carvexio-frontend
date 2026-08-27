@@ -15,6 +15,16 @@ export type AdminBusiness = {
   status?: string | null;
 };
 
+export type AdminBusinessPurchase = {
+  orderId: number;
+  paidAmount: number;
+  commissionRate: number;
+  adminAmount: number;
+  businessAmount: number;
+  status: string;
+  createdAt: string;
+};
+
 export type BusinessRevenue = {
   businessName: string;
   totalRevenue: number;

@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { apiFetch } from "../../../lib/api";
 import { useUser } from "@auth0/nextjs-auth0/client";
-import { AdminBusiness, statusColor, statusLabel } from "../shared";
+import { AdminBusiness, AdminBusinessPurchase, statusColor, statusLabel } from "../shared";
 
 export default function AdminNegociosPage() {
   const router = useRouter();
@@ -14,6 +14,9 @@ export default function AdminNegociosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyBizId, setBusyBizId] = useState<number | null>(null);
+  const [hoveredBusinessId, setHoveredBusinessId] = useState<number | null>(null);
+  const [purchasesByBusiness, setPurchasesByBusiness] = useState<Record<number, AdminBusinessPurchase[]>>({});
+  const [loadingPurchasesId, setLoadingPurchasesId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -71,6 +74,25 @@ export default function AdminNegociosPage() {
     } finally { setBusyBizId(null); }
   };
 
+  const showApprovedBusinessPurchases = async (business: AdminBusiness) => {
+    if (business.status !== "APPROVED") return;
+    setHoveredBusinessId(business.id);
+    if (purchasesByBusiness[business.id] !== undefined) return;
+
+    try {
+      setLoadingPurchasesId(business.id);
+      const purchases = await apiFetch<AdminBusinessPurchase[]>(`/admin/businesses/${business.id}/purchases`);
+      setPurchasesByBusiness(previous => ({
+        ...previous,
+        [business.id]: Array.isArray(purchases) ? purchases : [],
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudieron cargar las compras del negocio");
+    } finally {
+      setLoadingPurchasesId(null);
+    }
+  };
+
   if (isLoading || !user) {
     return <div className="p-10 text-center">Cargando sesión...</div>;
   }
@@ -107,13 +129,14 @@ export default function AdminNegociosPage() {
                 <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100" onMouseLeave={() => setHoveredBusinessId(null)}>
               {loading ? (
                 <tr><td colSpan={4} className="px-5 py-8 text-sm text-center text-slate-400">Cargando...</td></tr>
               ) : businesses.length === 0 ? (
                 <tr><td colSpan={4} className="px-5 py-8 text-sm text-center text-slate-400">No hay negocios.</td></tr>
               ) : businesses.map(b => (
-                <tr key={b.id} className="hover:bg-slate-50 transition">
+                <Fragment key={b.id}>
+                <tr onMouseEnter={() => showApprovedBusinessPurchases(b)} className="hover:bg-slate-50 transition">
                   <td className="px-5 py-3.5">
                     <div className="font-medium text-slate-900">{b.name ?? "-"}</div>
                     <div className="text-xs text-slate-400">{b.address ?? "-"}</div>
@@ -145,6 +168,54 @@ export default function AdminNegociosPage() {
                     </div>
                   </td>
                 </tr>
+                {b.status === "APPROVED" && hoveredBusinessId === b.id && (
+                  <tr className="bg-emerald-50/50">
+                    <td colSpan={4} className="px-5 py-4">
+                      <div className="rounded-xl border border-emerald-100 bg-white p-4 shadow-sm">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-xs font-bold text-slate-900">Compras pagadas de {b.name ?? "este negocio"}</div>
+                            <div className="mt-0.5 text-[11px] text-slate-500">Monto cobrado, reparto y fecha de cada pedido.</div>
+                          </div>
+                          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Negocio aprobado</span>
+                        </div>
+                        {loadingPurchasesId === b.id ? (
+                          <p className="py-3 text-center text-xs text-slate-400">Cargando compras...</p>
+                        ) : (purchasesByBusiness[b.id] ?? []).length === 0 ? (
+                          <p className="py-3 text-center text-xs text-slate-400">Aún no hay compras pagadas para este negocio.</p>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[680px] text-left text-xs">
+                              <thead className="border-b border-slate-100 text-[10px] uppercase tracking-wider text-slate-400">
+                                <tr>
+                                  <th className="pb-2 font-semibold">Pedido</th>
+                                  <th className="pb-2 font-semibold">Compra</th>
+                                  <th className="pb-2 font-semibold">Admin</th>
+                                  <th className="pb-2 font-semibold">Taller</th>
+                                  <th className="pb-2 font-semibold">Fecha y hora</th>
+                                  <th className="pb-2 font-semibold">Estado</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-50 text-slate-600">
+                                {(purchasesByBusiness[b.id] ?? []).map(purchase => (
+                                  <tr key={purchase.orderId}>
+                                    <td className="py-2.5 font-semibold text-slate-800">#{purchase.orderId}</td>
+                                    <td className="py-2.5">S/ {purchase.paidAmount.toLocaleString("es-PE", { minimumFractionDigits: 2 })}</td>
+                                    <td className="py-2.5 font-semibold text-violet-700">S/ {purchase.adminAmount.toLocaleString("es-PE", { minimumFractionDigits: 2 })} <span className="font-normal text-slate-400">({purchase.commissionRate}%)</span></td>
+                                    <td className="py-2.5 font-semibold text-emerald-700">S/ {purchase.businessAmount.toLocaleString("es-PE", { minimumFractionDigits: 2 })}</td>
+                                    <td className="py-2.5">{new Date(purchase.createdAt).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" })}</td>
+                                    <td className="py-2.5"><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">{purchase.status}</span></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
