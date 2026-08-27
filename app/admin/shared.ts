@@ -48,6 +48,8 @@ export type KPIs = {
   // Modelo de comisión
   gananciaAdmin?: number;
   pagoNegocios?: number;
+  commissionRate?: number;
+  ventasMarketplace?: number;
 
   // Desgloses
   topNegocios?: BusinessRevenue[];

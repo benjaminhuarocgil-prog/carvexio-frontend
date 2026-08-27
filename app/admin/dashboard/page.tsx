@@ -17,6 +17,8 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyBizId, setBusyBizId] = useState<number | null>(null);
+  const [commissionRate, setCommissionRate] = useState(20);
+  const [savingCommission, setSavingCommission] = useState(false);
 
   const totals = useMemo(() => {
     const total = users.length;
@@ -56,6 +58,7 @@ export default function AdminDashboardPage() {
         ]);
         if (cancelled) return;
         setKpis(kpiData);
+        setCommissionRate(kpiData.commissionRate ?? 20);
         setUsers(Array.isArray(userData) ? userData : []);
         setBusinesses(Array.isArray(bizData) ? bizData : []);
       } catch (err) {
@@ -80,6 +83,23 @@ export default function AdminDashboardPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al moderar negocio");
     } finally { setBusyBizId(null); }
+  };
+
+  const saveCommission = async () => {
+    try {
+      setSavingCommission(true);
+      setError(null);
+      const result = await apiFetch<{ commissionRate: number }>("/admin/commission", {
+        method: "PUT",
+        body: JSON.stringify({ commissionRate }),
+      });
+      setCommissionRate(result.commissionRate);
+      setKpis(previous => previous ? { ...previous, commissionRate: result.commissionRate } : previous);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar la comisión");
+    } finally {
+      setSavingCommission(false);
+    }
   };
 
   if (isLoading || !user) {
@@ -187,24 +207,49 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="mt-5 border-t border-slate-100 pt-4">
-            <div className="text-xs font-semibold text-slate-900 mb-2">Modelo de Comisión (Plataforma 10%)</div>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <div className="text-xs font-semibold text-slate-900">Comisión por ventas del marketplace</div>
+                <p className="mt-0.5 text-[10px] text-slate-500">Se aplica a las nuevas compras y queda guardada en cada pedido.</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <select
+                  aria-label="Comisión de la plataforma"
+                  value={commissionRate}
+                  onChange={(event) => setCommissionRate(Number(event.target.value))}
+                  disabled={savingCommission}
+                  className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-violet-500 disabled:opacity-60"
+                >
+                  {Array.from({ length: 21 }, (_, index) => index + 20).map(rate => (
+                    <option key={rate} value={rate}>{rate}%</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={saveCommission}
+                  disabled={savingCommission || commissionRate === (kpis?.commissionRate ?? 20)}
+                  className="rounded-lg bg-violet-600 px-2.5 py-1.5 text-[10px] font-bold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingCommission ? "Guardando..." : "Guardar"}
+                </button>
+              </div>
+            </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Monto Bruto Total:</span>
-                <span className="font-semibold text-slate-800">S/ {(kpis?.ingresosTotales ?? 0).toLocaleString("es-PE", { minimumFractionDigits: 2 })}</span>
+                <span className="text-slate-500">Ventas cobradas:</span>
+                <span className="font-semibold text-slate-800">S/ {(kpis?.ventasMarketplace ?? 0).toLocaleString("es-PE", { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Ganancia Admin (10%):</span>
+                <span className="text-slate-500">Para administrador:</span>
                 <span className="font-semibold text-violet-600">S/ {(kpis?.gananciaAdmin ?? 0).toLocaleString("es-PE", { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Pago a Negocios (90%):</span>
+                <span className="text-slate-500">Para talleres:</span>
                 <span className="font-semibold text-orange-600">S/ {(kpis?.pagoNegocios ?? 0).toLocaleString("es-PE", { minimumFractionDigits: 2 })}</span>
               </div>
-              {/* Barra de progreso de comisión */}
               <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden flex mt-2">
-                <div className="h-full bg-violet-500" style={{ width: "10%" }} title="Comisión Admin (10%)" />
-                <div className="h-full bg-orange-500" style={{ width: "90%" }} title="Pago a Negocios (90%)" />
+                <div className="h-full bg-violet-500" style={{ width: `${kpis?.commissionRate ?? 20}%` }} title={`Comisión Admin (${kpis?.commissionRate ?? 20}%)`} />
+                <div className="h-full bg-orange-500" style={{ width: `${100 - (kpis?.commissionRate ?? 20)}%` }} title={`Pago a talleres (${100 - (kpis?.commissionRate ?? 20)}%)`} />
               </div>
             </div>
           </div>
