@@ -19,6 +19,7 @@ export default function AdminDashboardPage() {
   const [busyBizId, setBusyBizId] = useState<number | null>(null);
   const [commissionRate, setCommissionRate] = useState(20);
   const [savingCommission, setSavingCommission] = useState(false);
+  const [commissionSaved, setCommissionSaved] = useState(false);
 
   const totals = useMemo(() => {
     const total = users.length;
@@ -88,6 +89,7 @@ export default function AdminDashboardPage() {
   const saveCommission = async () => {
     try {
       setSavingCommission(true);
+      setCommissionSaved(false);
       setError(null);
       const result = await apiFetch<{ commissionRate: number }>("/admin/commission", {
         method: "PUT",
@@ -95,6 +97,7 @@ export default function AdminDashboardPage() {
       });
       setCommissionRate(result.commissionRate);
       setKpis(previous => previous ? { ...previous, commissionRate: result.commissionRate } : previous);
+      setCommissionSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar la comisión");
     } finally {
@@ -216,7 +219,10 @@ export default function AdminDashboardPage() {
                 <select
                   aria-label="Comisión de la plataforma"
                   value={commissionRate}
-                  onChange={(event) => setCommissionRate(Number(event.target.value))}
+                  onChange={(event) => {
+                    setCommissionRate(Number(event.target.value));
+                    setCommissionSaved(false);
+                  }}
                   disabled={savingCommission}
                   className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-violet-500 disabled:opacity-60"
                 >
@@ -230,7 +236,7 @@ export default function AdminDashboardPage() {
                   disabled={savingCommission || commissionRate === (kpis?.commissionRate ?? 20)}
                   className="rounded-lg bg-violet-600 px-2.5 py-1.5 text-[10px] font-bold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {savingCommission ? "Guardando..." : "Guardar"}
+                  {savingCommission ? "Guardando..." : commissionSaved ? "Guardado" : "Guardar"}
                 </button>
               </div>
             </div>
