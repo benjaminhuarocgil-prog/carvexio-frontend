@@ -91,13 +91,13 @@ export default function EmpresaDashboardPage() {
           />
 
           <KpiCard label="Ingresos Totales" value={loading ? "—" : `S/ ${(dashboard?.ingresosTotal ?? 0).toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
-            sub={`Serv: S/ ${(dashboard?.ingresosServicios ?? 0).toLocaleString("es-PE")} | Prod: S/ ${(dashboard?.ingresosProductos ?? 0).toLocaleString("es-PE")}`}
+            sub={`Serv: S/ ${(dashboard?.ingresosServicios ?? 0).toLocaleString("es-PE")} | Prod. neto: S/ ${(dashboard?.ingresosProductos ?? 0).toLocaleString("es-PE")}`}
             color="bg-emerald-50 text-emerald-600"
             icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5 a3.5 3.5 0 0 0 0 7 h5 a3.5 3.5 0 0 1 0 7 H6"/></svg>}
           />
 
-          <KpiCard label="Venta Productos" value={loading ? "—" : `S/ ${(dashboard?.ingresosProductos ?? 0).toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
-            sub="total acumulado" color="bg-indigo-50 text-indigo-600"
+          <KpiCard label="Productos para recibir" value={loading ? "—" : `S/ ${(dashboard?.ingresosProductos ?? 0).toLocaleString("es-PE", { minimumFractionDigits: 2 })}`}
+            sub={`Bruto: S/ ${(dashboard?.ventasProductosBrutas ?? 0).toLocaleString("es-PE")} · Comisión: S/ ${(dashboard?.comisionMarketplace ?? 0).toLocaleString("es-PE")} (${dashboard?.commissionRate ?? 20}%)`} color="bg-indigo-50 text-indigo-600"
             icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42 a2 2 0 0 0 2 1.58 h9.78 a2 2 0 0 0 1.95 -1.57 l1.65 -7.43 H5.12"/></svg>}
           />
 

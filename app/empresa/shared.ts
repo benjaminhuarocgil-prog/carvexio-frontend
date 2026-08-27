@@ -132,8 +132,11 @@ export type DashboardData = {
   pedidosPendientes?: number;
   pedidosCompletados?: number;
   ingresosServicios?: number;
+  ventasProductosBrutas?: number;
+  comisionMarketplace?: number;
   ingresosProductos?: number;
   ingresosTotal: number;
+  commissionRate?: number;
   clientesTotal: number;
   servicioMasSolicitado: string;
   productoMasVendido?: string;
