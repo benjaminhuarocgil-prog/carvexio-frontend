@@ -17,11 +17,15 @@ export async function POST(req: NextRequest) {
     const userId = session.user.sub;
     // AUTH0_ISSUER_BASE_URL is like 'https://carvexio-payment.us.auth0.com'
     const issuerUrl = process.env.AUTH0_ISSUER_BASE_URL || '';
-    const domain = issuerUrl.replace('https://', '').replace('http://', '');
+    const domain = issuerUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
     // Usar credenciales M2M si existen (recomendado), si no, intentar con las normales
-    const clientId = process.env.AUTH0_M2M_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
-    const clientSecret = process.env.AUTH0_M2M_CLIENT_SECRET || process.env.AUTH0_CLIENT_SECRET;
+    const hasM2M = !!process.env.AUTH0_M2M_CLIENT_ID && !!process.env.AUTH0_M2M_CLIENT_SECRET;
+    const clientId = hasM2M ? process.env.AUTH0_M2M_CLIENT_ID : process.env.AUTH0_CLIENT_ID;
+    const clientSecret = hasM2M ? process.env.AUTH0_M2M_CLIENT_SECRET : process.env.AUTH0_CLIENT_SECRET;
+    if (!domain || !clientId || !clientSecret) {
+      return NextResponse.json({ error: "Falta configurar las credenciales de Auth0 en Vercel." }, { status: 500 });
+    }
 
     // 1. Obtener Token de la Management API
     const tokenRes = await fetch(`https://${domain}/oauth/token`, {
@@ -36,19 +40,16 @@ export async function POST(req: NextRequest) {
     });
 
     const tokenResJson = await tokenRes.json();
-    console.log("Management API token response:", JSON.stringify(tokenResJson));
 
     if (!tokenResJson.access_token) {
       console.error("No se obtuvo access_token. Respuesta:", tokenResJson);
-      return NextResponse.json({
-        error: `No se pudo obtener token de gestión: ${tokenResJson.error_description || tokenResJson.error || 'Error desconocido'}`
-      }, { status: 500 });
+      return NextResponse.json({ error: `Auth0 no autorizó el token de gestión: ${tokenResJson.error_description || tokenResJson.error || "Error desconocido"}` }, { status: 500 });
     }
 
     const access_token = tokenResJson.access_token;
 
     // 3. Asignar el rol al usuario en Auth0 (AHORA USANDO METADATOS)
-    const assignRes = await fetch(`https://${domain}/api/v2/users/${userId}`, {
+    const assignRes = await fetch(`https://${domain}/api/v2/users/${encodeURIComponent(userId)}`, {
       method: "PATCH",
       headers: {
         "Authorization": `Bearer ${access_token}`,
@@ -62,9 +63,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!assignRes.ok) {
-      const errData = await assignRes.json();
-      console.error("Error asignando rol:", errData);
-      throw new Error("No se pudo asignar el rol");
+      const errData = await assignRes.json().catch(() => ({}));
+      return NextResponse.json({
+        error: `Auth0 no pudo asignar el rol: ${errData.message || errData.error_description || errData.error || assignRes.statusText}`,
+      }, { status: assignRes.status >= 400 && assignRes.status < 500 ? assignRes.status : 500 });
     }
 
     return NextResponse.json({ success: true });
